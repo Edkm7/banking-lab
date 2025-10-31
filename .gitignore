@@ -2,6 +2,7 @@
 ansible/inventory/hosts.yaml
 ansible/inventory/hosts.yaml
 .local-backup/
+..gitignore
 
 # Ignore les fichiers secrets éventuels
 ansible/vars/secrets.yml

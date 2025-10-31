@@ -1,10 +1,11 @@
 # Ignore les inventaires contenant des IP réelles
 ansible/inventory/hosts.yaml
 ansible/inventory/hosts.yaml
-.local-backup/
-..gitignore
 
 # Ignore les fichiers secrets éventuels
 ansible/vars/secrets.yml
 *.vault
 *.secret
+
+# Ignore les sauvegardes locales
+.local-backup/

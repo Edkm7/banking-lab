@@ -1,0 +1,17 @@
+#Inventory fictif pour exemple
+all:
+vars:
+ansible_user: utilisateur
+children:
+kube_cluster:
+children:
+master:
+hosts:
+controlplane-1:
+ansible_host: 10.0.0.1
+workers:
+hosts:
+worker-1:
+ansible_host: 10.0.0.2
+worker-2:
+ansible_host: 10.0.0.3

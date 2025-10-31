@@ -1,0 +1,44 @@
+- name: Update apt cache and upgrade
+  apt:
+    update_cache: yes
+    upgrade: dist
+  tags: common
+
+- name: Install basic packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - software-properties-common
+    state: present
+  tags: common
+
+- name: Ensure br_netfilter module is loaded
+  ansible.builtin.modprobe:
+    name: br_netfilter
+    state: present
+  tags: common
+
+- name: Ensure sysctl for Kubernetes bridging is set
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: "1"
+    state: present
+    reload: yes
+  tags: common
+
+- name: Disable swap now
+  command: swapoff -a
+  args:
+    warn: false
+  tags: common
+
+- name: Disable swap in fstab
+  replace:
+    path: /etc/fstab
+    regexp: '(^.*\sswap\s.*$)'
+    replace: '# \\1'
+  tags: common

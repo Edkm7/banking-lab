@@ -1,0 +1,13 @@
+# ansible.cfg fictif pour exemple
+
+[defaults]
+roles_path = ./roles
+inventory = inventory/hosts.example.yaml
+remote_user = utilisateur
+
+
+[privilege_escalation]
+become = True
+become_method = sudo
+become_user = root
+become_ask_pass = True

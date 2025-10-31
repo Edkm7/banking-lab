@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: banking-db
+    environment:
+      POSTGRES_USER: bankuser
+      POSTGRES_PASSWORD: bankpass
+      POSTGRES_DB: banking
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/banking
+      SPRING_DATASOURCE_USERNAME: bankuser
+      SPRING_DATASOURCE_PASSWORD: bankpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8082:8080"
+
+  accounts-service:
+    build: ./accounts-service/backend
+    container_name: accounts-service
+    depends_on:
+      - postgres
+    environment:
+      PROJECT_NAME: "Accounts Service"
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: banking
+      POSTGRES_USER: bankuser
+      POSTGRES_PASSWORD: bankpass
+      FIRST_SUPERUSER: admin@banking.com
+      FIRST_SUPERUSER_PASSWORD: admin123
+      BACKEND_CORS_ORIGINS: "http://localhost:3000"
+
+    ports:
+      - "8081:8081"
+
+  reports-service:
+    build: ./reports-service
+    container_name: reports-service
+    environment:
+      - PORT=8083
+      - ACCOUNTS_URL=http://accounts-service:8082
+    depends_on:
+      - accounts-service
+    ports:
+      - "8083:8083"
+
+  web-dashboard:
+   build: ./web-dashboard
+   container_name: web-dashboard
+   ports:
+     - "3000:80"
+   depends_on:
+     - auth-service
+     - accounts-service
+     - reports-service
+
+volumes:
+  pgdata:

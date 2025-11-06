@@ -19,6 +19,8 @@ services:
     depends_on:
       - postgres
     environment:
+      BEZKODER_APP_JWTSECRET: 7yQZ0h8N2tqF1xYlQfM3H9lZ0L3Q4i7mN9uV5pT2kQw=
+      BEZKODER_APP_JWTEXPIRATIONMS: 86400000
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/banking
       SPRING_DATASOURCE_USERNAME: bankuser
       SPRING_DATASOURCE_PASSWORD: bankpass
@@ -31,7 +33,10 @@ services:
     container_name: accounts-service
     depends_on:
       - postgres
+    env_file:
+      - ./accounts-service/backend/.env
     environment:
+      SECRET_KEY: 7yQZ0h8N2tqF1xYlQfM3H9lZ0L3Q4i7mN9uV5pT2kQw=
       PROJECT_NAME: "Accounts Service"
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432

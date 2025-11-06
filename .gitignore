@@ -6,6 +6,7 @@ ansible/inventory/hosts.yaml
 ansible/vars/secrets.yml
 *.vault
 *.secret
+*.certs
 
 # Ignore les sauvegardes locales
 .local-backup/

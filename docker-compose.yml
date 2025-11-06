@@ -1,0 +1,151 @@
+version: "3.9"
+
+services:
+
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: vault
+    ports:
+      - "8200:8200"
+    command: vault server -config=/vault/config/config.hcl
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/data
+      - ./certs:/certs
+      - ./secrets:/secrets
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - banking-net
+
+  vault-init:
+    image: hashicorp/vault:1.15
+    container_name: vault-init
+    depends_on:
+      - vault
+    environment:
+      - VAULT_ADDR=http://vault:8200
+    volumes:
+      - ./secrets:/secrets
+      - ./init-vault-prod.sh:/init-vault-prod.sh
+    entrypoint: >
+      sh -c "
+        echo 'Installing curl and jq...' &&
+        apk add --no-cache curl jq >/dev/null &&
+        echo 'Running init script...' &&
+        sh /init-vault-prod.sh
+      "
+    networks:
+      - banking-net
+
+  vault-ready:
+    image: curlimages/curl:8.7.1
+    container_name: vault-ready
+    command: ["sh", "-c", "apk add --no-cache grep && sh /scripts/wait-for-vault.sh"]
+    volumes:
+      - ./wait-for-vault.sh:/wait-for-vault.sh
+    depends_on:
+      - vault
+      - vault-init
+    networks:
+      - banking-net
+
+  db:
+    image: postgres:15
+    container_name: db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      - banking-net
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672" # interface admin
+    networks:
+      - banking-net
+
+  auth-service:
+    build: ./auth-service/backend
+    container_name: auth-service
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN_FILE: "/secrets/vault-token.txt"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - db
+      - vault-ready
+      - rabbitmq
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./secrets/vault-token.txt:/secrets/vault-token.txt:ro
+    networks:
+      - banking-net
+
+  accounts-service:
+    build: ./accounts-service/backend
+    container_name: accounts-service
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN_FILE: "/secrets/vault-token.txt"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - db
+      - vault-ready
+      - rabbitmq
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./secrets/vault-token.txt:/secrets/vault-token.txt:ro
+    networks:
+      - banking-net
+
+  reports-service:
+    build: ./reports-service/backend
+    container_name: reports-service
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN_FILE: "/secrets/vault-token.txt"
+    depends_on:
+      - db
+      - vault-ready
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./secrets/vault-token.txt:/secrets/vault-token.txt:ro
+    networks:
+      - banking-net
+
+
+  web-dashboard:
+    build: ./web-dashboard
+    container_name: web-dashboard
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_AUTH_URL: http://auth-service:8080
+      REACT_APP_ACCOUNTS_URL: http://accounts-service:8081
+      REACT_APP_REPORTS_URL: http://reports-service:8082
+    depends_on:
+      - auth-service
+      - accounts-service
+      - reports-service
+    networks:
+      - banking-net
+
+networks:
+  banking-net:
+    driver: bridge

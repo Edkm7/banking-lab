@@ -9,3 +9,28 @@ ansible/vars/secrets.yml
 
 # Ignore les sauvegardes locales
 .local-backup/
+
+# Secrets
+/secrets/*
+!/secrets/*.example
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+build/
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+#Vault
+vault/*
+*.init

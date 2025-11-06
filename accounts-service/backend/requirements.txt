@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+sqlmodel
+psycopg2-binary
+pika
+python-jose
+python-multipart
+passlib[bcrypt]
+hvac

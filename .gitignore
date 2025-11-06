@@ -36,3 +36,19 @@ build/
 certs/*
 vault/*
 *.init
+secrets/
+vault/
+certs/
+*.pem
+*.key
+*.crt
+*.p12
+*.txt
+!README.txt  # autoriser fichiers doc
+.env
+*.env
+*.log
+
+# Docker / K8s
+*.tar
+*.kubeconfig
